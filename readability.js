@@ -10,17 +10,22 @@ function readability(filename, callback) {
     fs.readFile(filename, "utf8", (err, contents) => {
         if (err) throw err;
 
-
-        let title = process.argv[2].split('.')[0];
-
+        // open db file containing text information
         let db = new sqlite3.Database('./texts.db', sqlite3.OPEN_READWRITE, (err) => {
             if (err) {
                 console.error(err.message);
             };
-            db.get(`SELECT * FROM text_info WHERE title='${title}'`, (err, row) => {
+
+            // hash for current text file
+            const hash = md5File.sync(filename);
+
+            // retrieve row from database (if such exists) matching text file's hash
+            db.get(`SELECT * FROM text_info WHERE hash='${hash}'`, (err, row) => {
                 if (err) {
                     return console.error(err.message);
                 }
+
+                // if the row does not exist, calculate information and call function store_info to create a new row
                 if (typeof row == 'undefined') {
 
                     let sentence_count = tokenizeEnglish.sentences()(contents).length;
@@ -35,10 +40,10 @@ function readability(filename, callback) {
                     let CL_value = colemanLiau(letter_count, word_count, sentence_count);
                     let ARI_value = automatedReadabilityIndex(letter_count, number_count, word_count, sentence_count);
 
-
                     store_info(db, sentence_count, char_count, word_count, letter_count,
-                        number_count, CL_value, ARI_value, title);
+                        number_count, CL_value, ARI_value, hash);
 
+                    // callback to user with text statistics
                     callback(sentence_count + " sentences\n" +
                         char_count + " characters\n" +
                         word_count + " words\n" +
@@ -49,6 +54,7 @@ function readability(filename, callback) {
                 }
                 else {
 
+                    // if the row does exist, extract statistics for text
                     let sentence_count = row.sentence_count;
                     let char_count = row.char_count;
                     let word_count = row.word_count;
@@ -57,6 +63,7 @@ function readability(filename, callback) {
                     let CL_value = row.CL_value;
                     let ARI_value = row.ARI_value;
 
+                    // callback to user with text statistics
                     callback(sentence_count + " sentences\n" +
                         char_count + " characters\n" +
                         word_count + " words\n" +
@@ -95,11 +102,10 @@ else {
     console.log("Usage: node readability.js <file>");
 }
 
-//function read_info (db, title) {}
-
-function store_info (db, sentences, characters, words, letters, numbers, CL_value, ARI_value, title) {
-      db.run(`INSERT INTO text_info(sentence_count, char_count, word_count, letter_count, number_count, CL_value, ARI_value, title) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
-              [sentences, characters, words, letters, numbers, CL_value, ARI_value, title], function(err) {
+// insert new row into database with text statistics
+function store_info (db, sentences, characters, words, letters, numbers, CL_value, ARI_value, hash) {
+      db.run(`INSERT INTO text_info(sentence_count, char_count, word_count, letter_count, number_count, CL_value, ARI_value, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+              [sentences, characters, words, letters, numbers, CL_value, ARI_value, hash], function(err) {
         if (err) {
           return console.log(err.message);
         }
