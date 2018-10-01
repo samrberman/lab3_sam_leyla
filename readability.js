@@ -10,6 +10,8 @@ function readability(filename, callback) {
     fs.readFile(filename, "utf8", (err, contents) => {
         if (err) throw err;
 
+        let title = (filename.split("/")[1]).split(".")[0]
+
         // open db file containing text information
         let db = new sqlite3.Database('./texts.db', sqlite3.OPEN_READWRITE, (err) => {
             if (err) {
@@ -44,11 +46,13 @@ function readability(filename, callback) {
                         number_count, CL_value, ARI_value, hash);
 
                     // callback to user with text statistics
-                    callback(sentence_count + " sentences\n" +
+                    callback("\nREADABILITY OF " + title.toUpperCase() + ":\n\n" +
+                        sentence_count + " sentences\n" +
                         char_count + " characters\n" +
                         word_count + " words\n" +
                         letter_count + " letters\n" +
                         number_count + " numbers\n" +
+                        "--------------------------------" +
                         "\nColeman Liau: " + CL_value +
                         "\nAutomated Readability Index: " + ARI_value + "\n");
                 }
@@ -64,11 +68,13 @@ function readability(filename, callback) {
                     let ARI_value = row.ARI_value;
 
                     // callback to user with text statistics
-                    callback(sentence_count + " sentences\n" +
+                    callback("\nREADABILITY OF " + title.toUpperCase() + ":\n\n" +
+                        sentence_count + " sentences\n" +
                         char_count + " characters\n" +
                         word_count + " words\n" +
                         letter_count + " letters\n" +
                         number_count + " numbers\n" +
+                        "--------------------------------" +
                         "\nColeman Liau: " + CL_value +
                         "\nAutomated Readability Index: " + ARI_value + "\n");
                 }
